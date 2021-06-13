@@ -6,32 +6,22 @@ class Camera:
 		self.__camera = ONVIFCamera(host, port, login, password)
 		self.__services = tuple(self.__camera.services_template.keys())
 		self.__media = self.__camera.create_media_service()
-		self.info()
 
 	def get_available_services(self):
 		return self.__services
 
-	# def __init_services(self):
-	# 	template = self.__camera.services_template
-	# 	for serviceName in template.keys():
-	# 		if template[serviceName]:
-	# 			continue
-	# 		getattr(self.__camera, f"create_{serviceName}_service")()
-	# 		print("create service:", serviceName)
+	# def info(self):
+	# 	device = self.__camera.devicemgmt
+	# 	print("info:", device.GetDeviceInformation())
 
-	def info(self):
-		device = self.__camera.devicemgmt
-		print("info:", device.GetDeviceInformation())
-
-	def get_stream_uri(self):
+	def get_stream_uri(self, protocol="RTSP"):
 		media = self.__media
-		# capabilities = media.GetServiceCapabilities()
 		profiles = media.GetProfiles()
 		profile_token = profiles[0].token
 		uri = media.GetStreamUri({
 			"StreamSetup": {
 				"Stream": "RTP-Unicast",
-				"Transport": {"Protocol": "RTSP"}
+				"Transport": {"Protocol": protocol}
 			},
 			"ProfileToken": profile_token
 		})
