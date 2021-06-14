@@ -130,3 +130,7 @@ dmypy.json
 
 # IDEA/PyCharm
 .idea/
+
+# project
+data/
+tmp/

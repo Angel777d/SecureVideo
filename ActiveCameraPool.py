@@ -2,7 +2,7 @@ import logging
 import time
 
 from CameraConfig import CameraConfig
-from Env import EventDispatcher
+from EventDispatcher import EventDispatcher
 from ONVIFController import ONVIFController
 
 
@@ -33,31 +33,50 @@ class DT:
 		pass
 
 
+class AlertData:
+	def __init__(self, alert_id, user, name, uri):
+		self.alert_id = alert_id
+		self.user = user
+		self.name = name
+		self.uri = uri
+
+	def key(self):
+		return self.alert_id, self.user, self.name
+
+
 class CameraAlert:
 	def __init__(self, env: EventDispatcher, config: CameraConfig):
 		self.env: EventDispatcher = env
 		self.config: CameraConfig = config
 
 		self.inProgress = False
+		self.stream_uri = None
 		self.timeStarted = 0
+
+		self.alert_id = 0
 
 	def on_motion(self, messages):
 		curr_time = time.time()
 		if len(messages):
-			print("Alert updated!")
+			# print("Alert updated!")
 			self.timeStarted = curr_time
 
 		if self.inProgress and curr_time - self.timeStarted > 30:
+			logging.info(f'Alert stop. Camera name: {self.config.name}, user: {self.config.user}')
+			data = AlertData(self.alert_id, self.config.user, self.config.name, self.stream_uri)
+			self.env.dispatch("alert.stop", data)
 			self.inProgress = False
 			self.timeStarted = 0
-			self.env.dispatch("alert.stop", self.config)
-			print("Alert stop!")
+			self.stream_uri = None
 			return
 
 		if not self.inProgress and self.timeStarted:
-			self.inProgress = True
-			self.env.dispatch("alert.start", self.config)
 			logging.info(f'Alert start! Camera name: {self.config.name}, user: {self.config.user}')
+			self.alert_id += 1
+			self.inProgress = True
+			self.stream_uri = self.config.get_uri()
+			data = AlertData(self.alert_id, self.config.user, self.config.name, self.stream_uri)
+			self.env.dispatch("alert.start", data)
 			return
 
 
@@ -101,10 +120,10 @@ class ActiveCameraPool:
 		env.add_event_listener("camera.deactivate", self.__on_camera_deactivate)
 		self.__handlers = {}
 
-	def __on_camera_activate(self, event_name, data: CameraConfig):
+	def __on_camera_activate(self, data: CameraConfig):
 		self.add_active_camera(data)
 
-	def __on_camera_deactivate(self, event_name, data):
+	def __on_camera_deactivate(self, data):
 		self.remove_active_camera(data)
 
 	def remove_active_camera(self, config: CameraConfig):

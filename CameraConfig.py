@@ -20,6 +20,10 @@ class CameraConfig:
 		self.login = login
 		self.password = password
 
+		self.alert_send_image = True
+		self.alert_send_video = False
+		self.alert_cloud_video = True
+
 	@classmethod
 	def restore(cls, data):
 		if not data:
