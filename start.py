@@ -3,6 +3,7 @@ import logging
 import logging_setup
 
 logging_setup.configure("logs", "SecureVideoBot")
+
 from SecureVideoBot import SecureVideoBot
 from config import BOT_TOKEN
 
