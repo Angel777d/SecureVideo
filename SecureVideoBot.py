@@ -3,19 +3,21 @@ import time
 
 from py_telegram_bot_api_framework.ABot import ABot
 
+from Actions import SnapshotAction, CaptureVideoAction
 from ActiveCameraPool import ActiveCameraPool, AlertData
 from BotUser import BotUser
 from CameraConfig import CameraConfig
 from CameraManagementHandler import CameraManagementHandler
 from Env import Env
-from MediaWriter import SnapshotAction, CaptureVideoAction
 from SnapshotHandler import SnapshotHandler
 from VideoHandler import VideoHandler
 from utils import file_time
 
+MAIN_LOOP_SLEEP_TIME = 1
+
 
 class SecureVideoBot(ABot):
-	# add_camera - Add camera configuaration
+	# add_camera - Add camera configuration
 	# video - get video from camera
 	# snapshot - get snapshot from camera
 
@@ -50,7 +52,7 @@ class SecureVideoBot(ABot):
 	def main_loop(self):
 		while True:
 			self.__cameras.process()
-			time.sleep(10)
+			time.sleep(MAIN_LOOP_SLEEP_TIME)
 
 	def __on_alert_start(self, alert: AlertData):
 		print("start alert key", alert.key())
@@ -58,14 +60,11 @@ class SecureVideoBot(ABot):
 		cam = CameraConfig.restore(self.env.get_camera_config(alert.user, alert.name))
 		usr = BotUser.restore(self.env.get_user(alert.user))
 
-		self.api.send_message(usr.id, "Alert!")
-
 		if cam.alert_send_image:
 			path = f'tmp/{file_time()}.jpg'
 			SnapshotAction(self.env, "media.snapshot").set_params(
 				chat_id=usr.id,
-				path=path,
-				uri=uri
+				message=f"Alert ({alert.alert_id})! Snapshot sent.",
 			).start(uri, path)
 
 		if cam.alert_send_video:
@@ -75,11 +74,10 @@ class SecureVideoBot(ABot):
 
 			self.__actions[alert.key()] = CaptureVideoAction(self.env, "media.video").set_params(
 				chat_id=usr.id,
-				path=f'{path}.{ext}'
+				message=f'{path}.{ext}'
 			).start_capture(uri, path, ext, codec)
 
 	def __on_alert_stop(self, alert: AlertData):
-		print("start alert key", alert.key())
-		action: CaptureVideoAction = self.__actions.pop(alert.key())
-		if action:
-			action.stop()
+		print("stop alert key", alert.key())
+		if alert.key() in self.__actions:
+			self.__actions.pop(alert.key()).stop()

@@ -1,5 +1,3 @@
-from ONVIFController import ONVIFController
-
 _DEFAULT_ONVIF_PORT = 2020
 _DEFAULT_RTSP_PORT = 554
 
@@ -45,15 +43,3 @@ class CameraConfig:
 		if self.rtsp_port != _DEFAULT_RTSP_PORT:
 			data.update({"rtsp_port": self.rtsp_port})
 		return data
-
-	def format_uri(self, protocol, address, port, path):
-		if self.login:
-			return f"{protocol}//{self.login}:{self.password}@{self.host}:{self.rtsp_port}/{path}"
-		else:
-			return f"{protocol}//{self.host}:{self.rtsp_port}/{path}"
-
-	def get_uri(self):
-		camera = ONVIFController(self.host, self.onvif_port, self.login, self.password)
-		protocol, address, port, path = camera.get_stream_uri()
-		uri = self.format_uri(protocol, address, port, path)
-		return uri

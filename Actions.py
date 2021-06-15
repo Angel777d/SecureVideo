@@ -13,20 +13,11 @@ class Action(object):
 		self.event_name = event_name
 
 		self.chat_id = None
-		self.tid = None
-		self.camera_name = None
 		self.message = None
 
-		self.path = None
-		self.uri = None
-
-	def set_params(self, chat_id=None, tid=None, camera_name=None, message=None, uri=None, path=None):
+	def set_params(self, chat_id=None, message=None):
 		self.chat_id = chat_id
-		self.tid = tid
-		self.camera_name = camera_name
 		self.message = message
-		self.uri = uri
-		self.path = path
 		return self
 
 	def do_action(self):
@@ -38,6 +29,7 @@ class CaptureVideoAction(Action):
 	def __init__(self, env: EventDispatcher, event_name: str):
 
 		Action.__init__(self, env, event_name)
+		self.path = None
 
 		self.__capture = None
 		self.__output_video = None
@@ -49,6 +41,8 @@ class CaptureVideoAction(Action):
 			path: str = "output", ext: str = "avi", codec: str = 'MJPG',
 			frame_rate: int = 15
 	):
+		self.path = f'{path}.{ext}'
+
 		# Create a VideoCapture object
 		self.__capture = cv2.VideoCapture(uri)
 		# Default resolutions of the frame are obtained (system dependent)
@@ -59,7 +53,7 @@ class CaptureVideoAction(Action):
 		# https://docs.opencv.org/master/dd/d43/tutorial_py_video_display.html
 		_codec = cv2.VideoWriter_fourcc(*codec)
 		self.__output_video = cv2.VideoWriter(
-			f'{path}.{ext}',
+			self.path,
 			_codec,
 			frame_rate,
 			(frame_width, frame_height)
@@ -114,8 +108,10 @@ class CaptureVideoLimitedAction(CaptureVideoAction):
 class SnapshotAction(Action):
 	def __init__(self, env: EventDispatcher, event_name: str):
 		super().__init__(env, event_name)
+		self.path = None
 
 	def start(self, uri, path):
+		self.path = path
 		cap = cv2.VideoCapture(uri)
 		# ret, frame = cap.read()
 		cap.read()

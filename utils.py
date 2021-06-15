@@ -23,3 +23,11 @@ def get_camera_config_from_message(env: Env, msg: Message):
 	name = get_camera_name_from_message(msg, user.default_camera)
 	config = env.get_camera_config(tid, name)
 	return config
+
+
+def get_uri(config, controller):
+	protocol, address, port, path = controller.get_stream_uri()
+	if config.login:
+		return f"{protocol}//{config.login}:{config.password}@{config.host}:{config.rtsp_port}/{path}"
+	else:
+		return f"{protocol}//{config.host}:{config.rtsp_port}/{path}"

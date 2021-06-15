@@ -3,6 +3,7 @@ from py_telegram_bot_api_framework.SimpleFileStorage import SimpleFileStorage
 from BotUser import BotUser
 from CameraConfig import CameraConfig
 from EventDispatcher import EventDispatcher
+from ONVIFController import ONVIFControllerCollection
 
 
 class Env(EventDispatcher):
@@ -10,6 +11,8 @@ class Env(EventDispatcher):
 		EventDispatcher.__init__(self)
 		self.camera_storage = SimpleFileStorage("data/cameras.json")
 		self.user_storage = SimpleFileStorage("data/users.json")
+
+		self.controllers: ONVIFControllerCollection = ONVIFControllerCollection()
 
 	def get_user(self, tid) -> BotUser:
 		default = {"tid": tid}

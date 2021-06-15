@@ -2,8 +2,12 @@ import logging
 import time
 
 from CameraConfig import CameraConfig
-from EventDispatcher import EventDispatcher
-from ONVIFController import ONVIFController
+from Env import Env
+from utils import get_uri
+
+RECONNECT_TIMOUT = 60
+ALERT_TIMOUT = 30
+PULL_TIMEOUT = 1
 
 
 class DT:
@@ -45,8 +49,8 @@ class AlertData:
 
 
 class CameraAlert:
-	def __init__(self, env: EventDispatcher, config: CameraConfig):
-		self.env: EventDispatcher = env
+	def __init__(self, env: Env, config: CameraConfig):
+		self.env: Env = env
 		self.config: CameraConfig = config
 
 		self.inProgress = False
@@ -61,48 +65,43 @@ class CameraAlert:
 			# print("Alert updated!")
 			self.timeStarted = curr_time
 
-		if self.inProgress and curr_time - self.timeStarted > 30:
+		if self.inProgress and curr_time - self.timeStarted > ALERT_TIMOUT:
 			logging.info(f'Alert stop. Camera name: {self.config.name}, user: {self.config.user}')
 			data = AlertData(self.alert_id, self.config.user, self.config.name, self.stream_uri)
-			self.env.dispatch("alert.stop", data)
 			self.inProgress = False
 			self.timeStarted = 0
 			self.stream_uri = None
+			self.env.dispatch("alert.stop", data)
 			return
 
 		if not self.inProgress and self.timeStarted:
 			logging.info(f'Alert start! Camera name: {self.config.name}, user: {self.config.user}')
+			alert_id = self.alert_id
 			self.alert_id += 1
 			self.inProgress = True
-			self.stream_uri = self.config.get_uri()
-			data = AlertData(self.alert_id, self.config.user, self.config.name, self.stream_uri)
+			controller = self.env.controllers.get(self.config)
+			self.stream_uri = get_uri(self.config, controller)
+			data = AlertData(alert_id, self.config.user, self.config.name, self.stream_uri)
 			self.env.dispatch("alert.start", data)
 			return
 
 
 class CameraEventsHandler(DT):
-	def __init__(self, env: EventDispatcher, config: CameraConfig):
+	def __init__(self, env: Env, config: CameraConfig):
 		DT.__init__(self)
-
+		self.env = env
 		self.__config = config
-		self.__camera: ONVIFController = self.__create_camera_function(config)
-
 		self.__alert = CameraAlert(env, config)
-
-	@staticmethod
-	def __create_camera_function(config: CameraConfig) -> ONVIFController:
-		return ONVIFController(config.host, config.onvif_port, config.login, config.password)
 
 	@property
 	def camera(self):
-		if not self.__camera:
-			self.__camera = self.__create_camera_function(self.__config)
-			self.set_wait_time(10)
-		return self.__camera
+		if not self.env.controllers.has(self.__config):
+			self.set_wait_time(PULL_TIMEOUT)
+		return self.env.controllers.get(self.__config)
 
 	def reset_camera(self):
-		self.__camera = None
-		self.set_wait_time(60)
+		self.env.controllers.remove(self.__config)
+		self.set_wait_time(RECONNECT_TIMOUT)
 
 	def do_job(self):
 		try:
@@ -114,8 +113,8 @@ class CameraEventsHandler(DT):
 
 
 class ActiveCameraPool:
-	def __init__(self, env: EventDispatcher):
-		self.env: EventDispatcher = env
+	def __init__(self, env: Env):
+		self.env: Env = env
 		env.add_event_listener("camera.activate", self.__on_camera_activate)
 		env.add_event_listener("camera.deactivate", self.__on_camera_deactivate)
 		self.__handlers = {}

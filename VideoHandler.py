@@ -5,8 +5,8 @@ from telegram_bot_api import API, Update, MessageBuilder, MessageEntityType, Inp
 
 from CameraConfig import CameraConfig
 from Env import Env
-from MediaWriter import CaptureVideoLimitedAction, Action
-from utils import file_time, get_camera_config_from_message
+from Actions import CaptureVideoLimitedAction, CaptureVideoAction
+from utils import file_time, get_camera_config_from_message, get_uri
 
 
 class VideoHandler(BotBasicHandler):
@@ -31,7 +31,10 @@ class VideoHandler(BotBasicHandler):
 			logging.warning(f"get_video -- no camera to get video from")
 			return True
 
-		uri = CameraConfig.restore(config).get_uri()
+		config = CameraConfig.restore(config)
+		controller = self.env.controllers.get(config)
+		uri = get_uri(config, controller)
+
 		v, e = MessageBuilder().append("Stream url:\n").append(uri, MessageEntityType.URL).get()
 		self.api.send_message(update.message.chat.id, v, entities=e)
 
@@ -40,14 +43,15 @@ class VideoHandler(BotBasicHandler):
 		codec = self.config.get("codec")
 		duration = 3
 
+		caption = f"Video: {path}.{ext}"
 		CaptureVideoLimitedAction(self.env, "media.video", duration).set_params(
 			chat_id=update.message.chat.id,
-			path=f'{path}.{ext}'
+			message=caption
 		).start_capture(uri, path, ext, codec)
 
 		return True
 
-	def on_video(self, action: Action):
+	def on_video(self, action: CaptureVideoAction):
 		try:
 			self.api.send_document(
 				action.chat_id,
@@ -56,4 +60,3 @@ class VideoHandler(BotBasicHandler):
 			)
 		except ValueError as err:
 			logging.info(f"Can't send video: {err}")
-

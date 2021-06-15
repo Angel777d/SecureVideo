@@ -1,11 +1,16 @@
+import logging
 from datetime import timedelta
 
 from onvif import ONVIFCamera
 
+from CameraConfig import CameraConfig
+
 
 class ONVIFController:
-	def __init__(self, host, port, login, password):
-		camera = ONVIFCamera(host, port, login, password)
+	def __init__(self, config):
+		logging.info(f"new ONVIFController: {config.host}:{config.onvif_port}")
+		camera = ONVIFCamera(config.host, config.onvif_port, config.login, config.password
+							 )
 		self.__camera = camera
 		self.__media = camera.create_media_service()
 		self.__messages = []
@@ -62,3 +67,28 @@ class ONVIFController:
 		port = data[2].split(":")[1]
 		path = "/".join(data[3:])
 		return protocol, host, port, path
+
+
+class ONVIFControllerCollection:
+	def __init__(self):
+		self.__all = {}
+
+	@staticmethod
+	def key(config: CameraConfig):
+		return config.user, config.name
+
+	def has(self, config: CameraConfig):
+		return self.key(config) in self.__all
+
+	def get(self, config: CameraConfig):
+		if not self.has(config):
+			return self.add(config)
+		return self.__all[self.key(config)]
+
+	def add(self, config: CameraConfig):
+		controller = ONVIFController(config)
+		self.__all[self.key(config)] = controller
+		return controller
+
+	def remove(self, config: CameraConfig):
+		self.__all.pop(self.key(config))

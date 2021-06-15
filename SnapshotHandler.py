@@ -5,8 +5,8 @@ from telegram_bot_api import API, Update, InputFile
 
 from CameraConfig import CameraConfig
 from Env import Env
-from MediaWriter import SnapshotAction, Action
-from utils import file_time, get_camera_config_from_message
+from Actions import SnapshotAction, Action
+from utils import file_time, get_camera_config_from_message, get_uri
 
 
 class SnapshotHandler(BotBasicHandler):
@@ -32,14 +32,17 @@ class SnapshotHandler(BotBasicHandler):
 			logging.warning(f"get_snapshot -- no camera to get snapshot from")
 			return True
 
-		uri = CameraConfig.restore(config).get_uri()
+		config = CameraConfig.restore(config)
+		controller = self.env.controllers.get(config)
+		uri = get_uri(config, controller)
 		path = f'tmp/{file_time()}.jpg'
 
-		SnapshotAction(self.env, "media.snapshot").set_params(chat_id=chat_id, path=path, uri=uri).start(uri, path)
+		caption = f"Snapshot: {path}."
+		SnapshotAction(self.env, "media.snapshot").set_params(chat_id=chat_id, message=caption).start(uri, path)
 
-	def on_snapshot(self, snapshot: Action):
+	def on_snapshot(self, snapshot: SnapshotAction):
 		self.api.send_photo(
 			snapshot.chat_id,
 			InputFile(snapshot.path),
-			caption=f'{snapshot.path}.jpg'
+			caption=snapshot.message
 		)
