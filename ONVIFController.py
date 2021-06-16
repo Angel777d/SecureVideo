@@ -9,8 +9,7 @@ from CameraConfig import CameraConfig
 class ONVIFController:
 	def __init__(self, config):
 		logging.info(f"new ONVIFController: {config.host}:{config.onvif_port}")
-		camera = ONVIFCamera(config.host, config.onvif_port, config.login, config.password
-							 )
+		camera = ONVIFCamera(config.host, config.onvif_port, config.login, config.password, override_address=True)
 		self.__camera = camera
 		self.__media = camera.create_media_service()
 		self.__messages = []
