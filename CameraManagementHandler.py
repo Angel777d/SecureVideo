@@ -21,6 +21,7 @@ class CameraManagementHandler(BotBasicHandler):
 
 	def _on_initialise(self):
 		self.register_command("/add_camera", self.add_camera)
+		self.register_command("/edit_camera", self.edit_camera)
 
 	@staticmethod
 	def __camera_config_from_message(tid: int, msg: Message):
@@ -42,8 +43,35 @@ class CameraManagementHandler(BotBasicHandler):
 		self.env.dispatch("camera.activate", config)
 
 		user = s.get_user(tid)
-		user.add_camera(config.name)
-		s.store_user(user)
+		if not user.default_camera:
+			user.default_camera = config.name
+			s.store_user(user)
 
 		self.api.send_message(update.message.chat.id, "New camera added!")
 		return True
+
+	def edit_camera(self, update: Update) -> bool:
+		tid = update.message.from_user.id
+		f = self.edit_camera_dialog(update.message)
+		self.env.dispatch("dialog.add_user_dialog", tid=tid, dialog=f)
+		next(f)
+		return True
+
+	def edit_camera_dialog(self, msg):
+		tid = msg.from_user.id
+		msg = yield self.__on_edit_camera_dialod(tid, "Name of camera pls.")
+
+		name = msg.text
+		config = self.env.storage.get_camera_config(tid, name)
+		if config:
+			msg = yield self.__on_edit_camera_dialod(tid,
+													 f"camera [{config.name}]: {config.host}:{config.onvif_port}, isActive: {config.isActive}")
+		else:
+			self.env.dispatch("dialog.remove_user_dialog", tid)
+			yield self.__on_edit_camera_dialod(tid, f"Can't find camera {name}")
+
+		self.env.dispatch("dialog.remove_user_dialog", tid)
+		yield self.__on_edit_camera_dialod(tid, f"cant do this yet: {msg.text}")
+
+	def __on_edit_camera_dialod(self, tid, text):
+		self.api.send_message(tid, text)

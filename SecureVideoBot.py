@@ -5,10 +5,10 @@ from py_telegram_bot_api_framework.ABot import ABot
 
 from Actions import SnapshotAction, CaptureVideoAction
 from ActiveCameraPool import ActiveCameraPool, AlertData
-from Storage import CameraConfig, BotUser
 from CameraManagementHandler import CameraManagementHandler
 from Env import Env
 from SnapshotHandler import SnapshotHandler
+from UserDialogHandler import UserDialogHandler
 from VideoHandler import VideoHandler
 from utils import file_time
 
@@ -33,7 +33,7 @@ class SecureVideoBot(ABot):
 		return self.config.get("env")
 
 	def _on_initialise(self):
-		self.add_handlers(CameraManagementHandler, VideoHandler, SnapshotHandler)
+		self.add_handlers(UserDialogHandler, CameraManagementHandler, VideoHandler, SnapshotHandler)
 		self.add_listeners()
 
 		# restore active cameras from storage

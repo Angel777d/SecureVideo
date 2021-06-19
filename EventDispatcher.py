@@ -10,7 +10,7 @@ class EventDispatcher:
 		callback_collection = self.__handlers.setdefault(event_name, set())
 		callback_collection.remove(callback)
 
-	def dispatch(self, event_name, data):
+	def dispatch(self, event_name, *args, **kwargs):
 		callback_collection = self.__handlers.setdefault(event_name, set())
 		for callback in callback_collection:
-			callback(data)
+			callback(*args, **kwargs)

@@ -39,15 +39,9 @@ class CameraConfig:
 
 
 class BotUser:
-	def __init__(self, tid, cameras=(), default_camera="", **kwargs):
+	def __init__(self, tid, default_camera="", **kwargs):
 		self.tid = int(tid)
-		self.cameras = list(cameras)
 		self.default_camera = default_camera
-
-	def add_camera(self, name):
-		self.cameras.append(name)
-		if not self.default_camera:
-			self.default_camera = name
 
 
 class Storage:
