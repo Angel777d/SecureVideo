@@ -2,7 +2,7 @@ from datetime import datetime
 
 from telegram_bot_api import Message
 
-from BotUser import BotUser
+from Storage import BotUser, CameraConfig
 from Env import Env
 
 
@@ -17,11 +17,11 @@ def get_camera_name_from_message(msg: Message, default: str = ""):
 	return default
 
 
-def get_camera_config_from_message(env: Env, msg: Message):
+def get_camera_config_from_message(env: Env, msg: Message) -> CameraConfig:
 	tid: int = msg.from_user.id
-	user = BotUser.restore(env.get_user(tid))
-	name = get_camera_name_from_message(msg, user.default_camera)
-	config = env.get_camera_config(tid, name)
+	user: BotUser = env.storage.get_user(tid)
+	name: str = get_camera_name_from_message(msg, user.default_camera)
+	config: CameraConfig = env.storage.get_camera_config(tid, name)
 	return config
 
 

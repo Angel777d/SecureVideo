@@ -3,7 +3,7 @@ from datetime import timedelta
 
 from onvif import ONVIFCamera
 
-from CameraConfig import CameraConfig
+from Storage import CameraConfig
 
 
 class ONVIFController:
@@ -74,7 +74,7 @@ class ONVIFControllerCollection:
 
 	@staticmethod
 	def key(config: CameraConfig):
-		return config.user, config.name
+		return config.tid, config.name
 
 	def has(self, config: CameraConfig):
 		return self.key(config) in self.__all

@@ -3,8 +3,7 @@ import logging
 from py_telegram_bot_api_framework.BotBasicHandler import BotBasicHandler
 from telegram_bot_api import API, Update, Message
 
-from BotUser import BotUser
-from CameraConfig import CameraConfig
+from Storage import CameraConfig, BotUser
 from Env import Env
 
 
@@ -27,7 +26,7 @@ class CameraManagementHandler(BotBasicHandler):
 	def __camera_config_from_message(tid: int, msg: Message):
 		params = msg.text.split(" ")[1:]
 		params = {i.split("=")[0]: i.split("=")[1] for i in params}
-		params["user"] = tid
+		params["tid"] = tid
 		config = CameraConfig(**params)
 		return config
 
@@ -37,13 +36,14 @@ class CameraManagementHandler(BotBasicHandler):
 		tid: int = update.message.from_user.id
 
 		config = self.__camera_config_from_message(tid, update.message)
-		self.env.store_camera_config(config)
-		self.env.add_active_camera(tid, config.name)
+		s = self.env.storage
+		s.store_camera_config(config)
+		s.add_active_camera(tid, config.name)
 		self.env.dispatch("camera.activate", config)
 
-		user = BotUser.restore(self.env.get_user(tid))
+		user = s.get_user(tid)
 		user.add_camera(config.name)
-		self.env.store_user(user)
+		s.store_user(user)
 
 		self.api.send_message(update.message.chat.id, "New camera added!")
 		return True

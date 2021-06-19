@@ -3,7 +3,7 @@ import logging
 from py_telegram_bot_api_framework.BotBasicHandler import BotBasicHandler
 from telegram_bot_api import API, Update, MessageBuilder, MessageEntityType, InputFile
 
-from CameraConfig import CameraConfig
+from Storage import CameraConfig
 from Env import Env
 from Actions import CaptureVideoLimitedAction, CaptureVideoAction
 from utils import file_time, get_camera_config_from_message, get_uri
@@ -31,7 +31,6 @@ class VideoHandler(BotBasicHandler):
 			logging.warning(f"get_video -- no camera to get video from")
 			return True
 
-		config = CameraConfig.restore(config)
 		controller = self.env.controllers.get(config)
 		uri = get_uri(config, controller)
 

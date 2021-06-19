@@ -122,3 +122,11 @@ class SnapshotAction(Action):
 				cv2.imwrite(path, frame)
 				self.do_action()
 		return self
+
+
+class UploadVideo(Action):
+	def __init__(self, env: EventDispatcher, event_name: str):
+		super().__init__(env, event_name)
+
+	def start(self, path):
+		self.path = path

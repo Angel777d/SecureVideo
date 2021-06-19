@@ -5,8 +5,7 @@ from py_telegram_bot_api_framework.ABot import ABot
 
 from Actions import SnapshotAction, CaptureVideoAction
 from ActiveCameraPool import ActiveCameraPool, AlertData
-from BotUser import BotUser
-from CameraConfig import CameraConfig
+from Storage import CameraConfig, BotUser
 from CameraManagementHandler import CameraManagementHandler
 from Env import Env
 from SnapshotHandler import SnapshotHandler
@@ -38,9 +37,9 @@ class SecureVideoBot(ABot):
 		self.add_listeners()
 
 		# restore active cameras from storage
-		active_cam = self.env.get_active_camera_list()
-		for cam in active_cam:
-			self.__cameras.add_active_camera(CameraConfig.restore(cam))
+		active_cam = self.env.storage.get_active_camera_list()
+		for config in active_cam:
+			self.__cameras.add_active_camera(config)
 
 		# start main loop
 		threading.Thread(target=self.main_loop).start()
@@ -57,13 +56,13 @@ class SecureVideoBot(ABot):
 	def __on_alert_start(self, alert: AlertData):
 		print("start alert key", alert.key())
 		uri = alert.uri
-		cam = CameraConfig.restore(self.env.get_camera_config(alert.user, alert.name))
-		usr = BotUser.restore(self.env.get_user(alert.user))
+		cam = self.env.storage.get_camera_config(alert.tid, alert.name)
+		usr = self.env.storage.get_user(alert.tid)
 
 		if cam.alert_send_image:
 			path = f'tmp/{file_time()}.jpg'
 			SnapshotAction(self.env, "media.snapshot").set_params(
-				chat_id=usr.id,
+				chat_id=usr.tid,
 				message=f"Alert ({alert.alert_id})! Snapshot sent.",
 			).start(uri, path)
 
@@ -73,7 +72,7 @@ class SecureVideoBot(ABot):
 			codec = self.config.get("codec")
 
 			self.__actions[alert.key()] = CaptureVideoAction(self.env, "media.video").set_params(
-				chat_id=usr.id,
+				chat_id=usr.tid,
 				message=f'{path}.{ext}'
 			).start_capture(uri, path, ext, codec)
 

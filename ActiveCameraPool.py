@@ -1,7 +1,7 @@
 import logging
 import time
 
-from CameraConfig import CameraConfig
+from Storage import CameraConfig
 from Env import Env
 from utils import get_uri
 
@@ -38,14 +38,14 @@ class DT:
 
 
 class AlertData:
-	def __init__(self, alert_id, user, name, uri):
+	def __init__(self, alert_id, tid, name, uri):
 		self.alert_id = alert_id
-		self.user = user
+		self.tid = tid
 		self.name = name
 		self.uri = uri
 
 	def key(self):
-		return self.alert_id, self.user, self.name
+		return self.alert_id, self.tid, self.name
 
 
 class CameraAlert:
@@ -66,8 +66,8 @@ class CameraAlert:
 			self.timeStarted = curr_time
 
 		if self.inProgress and curr_time - self.timeStarted > ALERT_TIMOUT:
-			logging.info(f'Alert stop. Camera name: {self.config.name}, user: {self.config.user}')
-			data = AlertData(self.alert_id, self.config.user, self.config.name, self.stream_uri)
+			logging.info(f'Alert stop. Camera name: {self.config.name}, user: {self.config.tid}')
+			data = AlertData(self.alert_id, self.config.tid, self.config.name, self.stream_uri)
 			self.inProgress = False
 			self.timeStarted = 0
 			self.stream_uri = None
@@ -75,13 +75,13 @@ class CameraAlert:
 			return
 
 		if not self.inProgress and self.timeStarted:
-			logging.info(f'Alert start! Camera name: {self.config.name}, user: {self.config.user}')
+			logging.info(f'Alert start! Camera name: {self.config.name}, user: {self.config.tid}')
 			alert_id = self.alert_id
 			self.alert_id += 1
 			self.inProgress = True
 			controller = self.env.controllers.get(self.config)
 			self.stream_uri = get_uri(self.config, controller)
-			data = AlertData(alert_id, self.config.user, self.config.name, self.stream_uri)
+			data = AlertData(alert_id, self.config.tid, self.config.name, self.stream_uri)
 			self.env.dispatch("alert.start", data)
 			return
 
@@ -126,12 +126,12 @@ class ActiveCameraPool:
 		self.remove_active_camera(data)
 
 	def remove_active_camera(self, config: CameraConfig):
-		key = config.user, config.name
+		key = config.tid, config.name
 		if key in self.__handlers:
 			del self.__handlers[key]
 
 	def add_active_camera(self, config: CameraConfig):
-		key = config.user, config.name
+		key = config.tid, config.name
 		print("add_active_camera", config.name)
 		if key in self.__handlers:
 			print("already active!", config.name)
