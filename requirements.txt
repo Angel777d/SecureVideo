@@ -1,5 +1,7 @@
-py-telegram-bot-api-framework~=0.0.2
-numpy~=1.19.5
-opencv-python~=4.5.2.54
-zeep
+py-telegram-bot-api-framework
 tinydb
+pycryptodomex
+numpy
+opencv-python
+zeep
+pwn

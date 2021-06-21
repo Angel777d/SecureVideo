@@ -7,6 +7,19 @@ import cv2
 from EventDispatcher import EventDispatcher
 
 
+def save_image(uri, path) -> str:
+	cap = cv2.VideoCapture(uri)
+	# ret, frame = cap.read()
+	cap.read()
+	if cap.isOpened():
+		state, frame = cap.read()
+		cap.release()  # releasing camera immediately after capturing picture
+		if state and frame is not None:
+			cv2.imwrite(path, frame)
+			return path
+	return ""
+
+
 class Action(object):
 	def __init__(self, env: EventDispatcher, event_name: str):
 		self.env = env
@@ -111,16 +124,8 @@ class SnapshotAction(Action):
 		self.path = None
 
 	def start(self, uri, path):
-		self.path = path
-		cap = cv2.VideoCapture(uri)
-		# ret, frame = cap.read()
-		cap.read()
-		if cap.isOpened():
-			state, frame = cap.read()
-			cap.release()  # releasing camera immediately after capturing picture
-			if state and frame is not None:
-				cv2.imwrite(path, frame)
-				self.do_action()
+		self.path = save_image(uri, path)
+		self.do_action()
 		return self
 
 

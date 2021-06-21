@@ -15,10 +15,10 @@ from utils import file_time
 MAIN_LOOP_SLEEP_TIME = 1
 
 
+# cameras - Add/edit camera configuration
+# video - get video from camera
+# snapshot - get snapshot from camera
 class SecureVideoBot(ABot):
-	# add_camera - Add camera configuration
-	# video - get video from camera
-	# snapshot - get snapshot from camera
 
 	def __init__(self, token: str, name: str = "DefaultBotName", **kwargs):
 		env = Env(**kwargs)

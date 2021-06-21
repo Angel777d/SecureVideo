@@ -129,6 +129,7 @@ class ActiveCameraPool:
 		key = config.tid, config.name
 		if key in self.__handlers:
 			del self.__handlers[key]
+			logging.info(f"Deactivate camera: {config.name}")
 
 	def add_active_camera(self, config: CameraConfig):
 		key = config.tid, config.name
@@ -141,5 +142,6 @@ class ActiveCameraPool:
 		self.__handlers[key] = CameraEventsHandler(self.env, config)
 
 	def process(self):
-		for c in self.__handlers.values():
+		h = self.__handlers.copy()
+		for c in h.values():
 			c.process()

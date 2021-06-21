@@ -18,7 +18,8 @@ class CameraConfig:
 			password: str = "",
 			alert_send_image: bool = True,
 			alert_send_video: bool = False,
-			alert_cloud_video: bool = True,
+			alert_cloud_video: bool = False,
+			isActive: bool = False,
 			**kwargs
 	):
 		self.tid = tid
@@ -35,7 +36,16 @@ class CameraConfig:
 		self.alert_send_video = alert_send_video
 		self.alert_cloud_video = alert_cloud_video
 
-		self.isActive = True
+		self.isActive = isActive
+
+	def apply_property(self, property_name, value):
+		if property_name in ("onvif_port", "rtsp_port"):
+			result = int(value)
+		elif property_name in ("alert_send_image", "alert_send_video", "alert_cloud_video", "isActive"):
+			result = bool(value)
+		else:
+			result = str(value)
+		setattr(self, property_name, result)
 
 
 class BotUser:
@@ -71,6 +81,11 @@ class Storage:
 		table.insert(data)
 		return CameraConfig(**data)
 
+	def remove_camera(self, tid, name):
+		Camera = Query()
+		table = self.db.table('camera')
+		result = table.remove((Camera.name == name) & (Camera.tid == tid))
+
 	def store_user(self, user: BotUser) -> None:
 		User = Query()
 		self.db.table('user').update(public_vars(user), User.tid == user.tid)
@@ -94,3 +109,7 @@ class Storage:
 	def get_active_camera_list(self):
 		Camera = Query()
 		return [CameraConfig(**v) for v in self.db.table('camera').search((Camera.isActive == True))]
+
+	def get_user_camera(self, tid):
+		Camera = Query()
+		return [CameraConfig(**v) for v in self.db.table('camera').search((Camera.tid == tid))]
