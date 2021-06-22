@@ -32,7 +32,7 @@ class VideoHandler(BotBasicHandler):
 			return True
 
 		controller = self.env.controllers.get(config)
-		uri = get_uri(config, controller)
+		uri = get_uri(config, controller.get_stream_uri())
 
 		v, e = MessageBuilder().append("Stream url:\n").append(uri, MessageEntityType.URL).get()
 		self.api.send_message(update.message.chat.id, v, entities=e)
@@ -40,7 +40,7 @@ class VideoHandler(BotBasicHandler):
 		path = f'tmp/{file_time()}'
 		ext = self.config.get("ext")
 		codec = self.config.get("codec")
-		duration = 3
+		duration = 10
 
 		caption = f"Video: {path}.{ext}"
 		CaptureVideoLimitedAction(self.env, "media.video", duration).set_params(

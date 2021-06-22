@@ -55,18 +55,18 @@ class SecureVideoBot(ABot):
 
 	def __on_alert_start(self, alert: AlertData):
 		print("start alert key", alert.key())
-		uri = alert.uri
-		cam = self.env.storage.get_camera_config(alert.tid, alert.name)
+		config = self.env.storage.get_camera_config(alert.tid, alert.name)
+		controller = self.env.controllers.get(config)
 		usr = self.env.storage.get_user(alert.tid)
 
-		if cam.alert_send_image:
+		if config.alert_send_image:
 			path = f'tmp/{file_time()}.jpg'
 			SnapshotAction(self.env, "media.snapshot").set_params(
 				chat_id=usr.tid,
 				message=f"Alert ({alert.alert_id})! Snapshot sent.",
-			).start(uri, path)
+			).start(path, config, controller)
 
-		if cam.alert_send_video:
+		if config.alert_send_video:
 			path = f'tmp/{file_time()}'
 			ext = self.config.get("ext")
 			codec = self.config.get("codec")

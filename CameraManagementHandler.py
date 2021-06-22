@@ -123,7 +123,7 @@ class CameraManagementHandler(BotBasicHandler):
 			status = controller.ptz_status()
 			print(status.Position.PanTilt.x, status.Position.PanTilt.y)
 			if action == "i":
-				uri = get_uri(config, controller)
+				uri = get_uri(config, controller.get_stream_uri())
 				path = f'tmp/{file_time()}.jpg'
 				img_path = save_image(uri, path)
 				self.api.answer_callback_query(update.callback_query.id)
@@ -139,7 +139,7 @@ class CameraManagementHandler(BotBasicHandler):
 				if action == "d":
 					dy = -5
 				controller.ptz_action(dx, dy)
-				uri = get_uri(config, controller)
+				uri = get_uri(config, controller.get_stream_uri())
 				path = f'tmp/{file_time()}.jpg'
 				img_path = save_image(uri, path)
 				self.api.answer_callback_query(update.callback_query.id)
@@ -277,6 +277,8 @@ class CameraManagementHandler(BotBasicHandler):
 		# self.api.delete_message(bot_msg.chat.id, bot_msg.message_id)
 
 		self.env.storage.store_camera_config(config)
+		self.env.controllers.remove(config)
+
 		self.env.dispatch("dialog.remove_user_dialog", tid)
 
 		text, entities = self.__get_camera_info(config)

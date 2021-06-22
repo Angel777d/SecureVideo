@@ -25,10 +25,19 @@ def get_camera_config_from_message(env: Env, msg: Message) -> CameraConfig:
 	return config
 
 
-def get_uri(config, controller):
-	protocol, address, port, path = controller.get_stream_uri()
-	print("utils", "get_uri", protocol, address, port, path)
-	if config.login:
-		return f"{protocol}//{config.login}:{config.password}@{config.host}:{config.rtsp_port}/{path}"
+def get_uri(config, uri):
+	uri = uri.Uri
+	return get_uri2(config, uri, config.rtsp_port)
+
+def get_uri2(config, uri, target_port, useCredentials=True):
+	data = uri.split("/")
+	protocol = data[0]
+	addr = data[2].split(":")
+	host = addr[0]
+	port = addr[1] if len(addr) > 1 else ""
+	path = "/".join(data[3:])
+	print("utils", "get_uri", protocol, host, port, path)
+	if useCredentials and config.login:
+		return f"{protocol}//{config.login}:{config.password}@{config.host}:{target_port}/{path}"
 	else:
-		return f"{protocol}//{config.host}:{config.rtsp_port}/{path}"
+		return f"{protocol}//{config.host}:{target_port}/{path}"

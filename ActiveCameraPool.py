@@ -38,11 +38,10 @@ class DT:
 
 
 class AlertData:
-	def __init__(self, alert_id, tid, name, uri):
+	def __init__(self, alert_id, tid, name):
 		self.alert_id = alert_id
 		self.tid = tid
 		self.name = name
-		self.uri = uri
 
 	def key(self):
 		return self.alert_id, self.tid, self.name
@@ -54,7 +53,6 @@ class CameraAlert:
 		self.config: CameraConfig = config
 
 		self.inProgress = False
-		self.stream_uri = None
 		self.timeStarted = 0
 
 		self.alert_id = 0
@@ -62,15 +60,13 @@ class CameraAlert:
 	def on_motion(self, messages):
 		curr_time = time.time()
 		if len(messages):
-			# print("Alert updated!")
 			self.timeStarted = curr_time
 
 		if self.inProgress and curr_time - self.timeStarted > ALERT_TIMOUT:
 			logging.info(f'Alert stop. Camera name: {self.config.name}, user: {self.config.tid}')
-			data = AlertData(self.alert_id, self.config.tid, self.config.name, self.stream_uri)
+			data = AlertData(self.alert_id, self.config.tid, self.config.name)
 			self.inProgress = False
 			self.timeStarted = 0
-			self.stream_uri = None
 			self.env.dispatch("alert.stop", data)
 			return
 
@@ -79,9 +75,7 @@ class CameraAlert:
 			alert_id = self.alert_id
 			self.alert_id += 1
 			self.inProgress = True
-			controller = self.env.controllers.get(self.config)
-			self.stream_uri = get_uri(self.config, controller)
-			data = AlertData(alert_id, self.config.tid, self.config.name, self.stream_uri)
+			data = AlertData(alert_id, self.config.tid, self.config.name)
 			self.env.dispatch("alert.start", data)
 			return
 

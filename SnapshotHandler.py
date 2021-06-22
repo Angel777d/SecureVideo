@@ -28,16 +28,14 @@ class SnapshotHandler(BotBasicHandler):
 	def get_snapshot(self, update: Update) -> bool:
 		chat_id = update.message.chat.id
 		config = get_camera_config_from_message(self.env, update.message)
-		if not config:
-			logging.warning(f"get_snapshot -- no camera to get snapshot from")
-			return True
-
 		controller = self.env.controllers.get(config)
-		uri = get_uri(config, controller)
 		path = f'tmp/{file_time()}.jpg'
-
 		caption = f"Snapshot: {path}."
-		SnapshotAction(self.env, "media.snapshot").set_params(chat_id=chat_id, message=caption).start(uri, path)
+		SnapshotAction(self.env, "media.snapshot").set_params(
+			chat_id=chat_id,
+			message=caption
+		).start(path, config, controller)
+		return True
 
 	def on_snapshot(self, snapshot: SnapshotAction):
 		self.api.send_photo(

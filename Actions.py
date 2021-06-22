@@ -1,10 +1,15 @@
 import logging
 import time
+import urllib.request
 from threading import Thread
 
 import cv2
+import requests
 
 from EventDispatcher import EventDispatcher
+from ONVIFController import ONVIFController
+from Storage import CameraConfig
+from utils import get_uri, get_uri2
 
 
 def save_image(uri, path) -> str:
@@ -18,6 +23,32 @@ def save_image(uri, path) -> str:
 			cv2.imwrite(path, frame)
 			return path
 	return ""
+
+
+def save_video(uri, path, stop_function, codec: str = 'MJPG', frame_rate: int = 15, ):
+	# Create a VideoCapture object
+	capture = cv2.VideoCapture(uri)
+	# Default resolutions of the frame are obtained (system dependent)
+	frame_width = int(capture.get(3))
+	frame_height = int(capture.get(4))
+
+	# Set up codec and output video settings
+	# https://docs.opencv.org/master/dd/d43/tutorial_py_video_display.html
+	_codec = cv2.VideoWriter_fourcc(*codec)
+	output_video = cv2.VideoWriter(
+		path,
+		_codec,
+		frame_rate,
+		(frame_width, frame_height)
+	)
+
+	while not stop_function():
+		if capture.isOpened():
+			status, frame = capture.read()
+			output_video.write(frame)
+
+	capture.release()
+	output_video.release()
 
 
 class Action(object):
@@ -40,8 +71,8 @@ class Action(object):
 
 class CaptureVideoAction(Action):
 	def __init__(self, env: EventDispatcher, event_name: str):
-
 		Action.__init__(self, env, event_name)
+		self.uri = None
 		self.path = None
 
 		self.__capture = None
@@ -54,23 +85,8 @@ class CaptureVideoAction(Action):
 			path: str = "output", ext: str = "avi", codec: str = 'MJPG',
 			frame_rate: int = 15
 	):
+		self.uri = uri
 		self.path = f'{path}.{ext}'
-
-		# Create a VideoCapture object
-		self.__capture = cv2.VideoCapture(uri)
-		# Default resolutions of the frame are obtained (system dependent)
-		frame_width = int(self.__capture.get(3))
-		frame_height = int(self.__capture.get(4))
-
-		# Set up codec and output video settings
-		# https://docs.opencv.org/master/dd/d43/tutorial_py_video_display.html
-		_codec = cv2.VideoWriter_fourcc(*codec)
-		self.__output_video = cv2.VideoWriter(
-			self.path,
-			_codec,
-			frame_rate,
-			(frame_width, frame_height)
-		)
 
 		# Start the thread to read frames from the video stream
 		self.__thread = Thread(target=self.__run, args=())
@@ -79,25 +95,13 @@ class CaptureVideoAction(Action):
 		return self
 
 	def __run(self):
-		while True:
-			self._do_job()
-			if self.__stop:
-				break
-		self.__finalize()
-
-	def __finalize(self):
+		save_video(self.uri, self.path, self._stop_function)
 		self.__thread = None
-
-		self.__capture.release()
-		self.__output_video.release()
 		logging.info("video capture done")
-
 		self.do_action()
 
-	def _do_job(self):
-		if self.__capture.isOpened():
-			status, frame = self.__capture.read()
-			self.__output_video.write(frame)
+	def _stop_function(self):
+		return self.__stop
 
 	def stop(self):
 		self.__stop = True
@@ -110,12 +114,10 @@ class CaptureVideoLimitedAction(CaptureVideoAction):
 		self.duration = duration
 		super().__init__(env, event_name)
 
-	def _do_job(self):
-		super()._do_job()
+	def _stop_function(self):
 		duration = time.time() - self.start_time
 		logging.info(f"frame {duration}")
-		if duration > self.duration:
-			self.stop()
+		return duration > self.duration
 
 
 class SnapshotAction(Action):
@@ -123,8 +125,19 @@ class SnapshotAction(Action):
 		super().__init__(env, event_name)
 		self.path = None
 
-	def start(self, uri, path):
-		self.path = save_image(uri, path)
+	def start(self, path, config: CameraConfig, controller: ONVIFController):
+		self.path = path
+
+		if controller.can_snapshot():
+			uri = controller.get_snapshot_uri().Uri
+			uri2 = get_uri2(config, uri, config.onvif_port)
+			response = requests.get(uri2)
+			with open(path, "wb") as f:
+				f.write(response.content)
+		else:
+			uri = get_uri(config, controller.get_stream_uri())
+			save_image(uri, path)
+
 		self.do_action()
 		return self
 

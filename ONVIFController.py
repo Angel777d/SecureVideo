@@ -44,7 +44,8 @@ class ONVIFController:
 		events = self.events
 		c = events.GetServiceCapabilities()
 		if c.WSPullPointSupport:
-			messages = self.pullpoint.PullMessages({"MessageLimit": 10, "Timeout": timedelta(seconds=2)})
+			p = self.pullpoint
+			messages = p.PullMessages({"MessageLimit": 10, "Timeout": timedelta(seconds=2)})
 			self.__on_messages(messages)
 
 	def __on_messages(self, resp):
@@ -56,24 +57,26 @@ class ONVIFController:
 		self.__messages = []
 		return result
 
+	def can_snapshot(self):
+		c = self.media.GetServiceCapabilities()
+		return c.SnapshotUri
+
+	def get_snapshot_uri(self):
+		profiles = self.media.GetProfiles()
+		token = profiles[0].token
+		return self.media.GetSnapshotUri({"ProfileToken": token})
+
 	def get_stream_uri(self, protocol="RTSP"):
 		media = self.media
 		profiles = media.GetProfiles()
-		profile_token = profiles[0].token
-		uri = media.GetStreamUri({
+		token = profiles[0].token
+		return media.GetStreamUri({
 			"StreamSetup": {
 				"Stream": "RTP-Unicast",
 				"Transport": {"Protocol": protocol}
 			},
-			"ProfileToken": profile_token
+			"ProfileToken": token
 		})
-
-		data = uri.Uri.split("/")
-		protocol = data[0]
-		host = data[2].split(":")[0]
-		port = data[2].split(":")[1]
-		path = "/".join(data[3:])
-		return protocol, host, port, path
 
 	def ptz_action(self, dx=0, dy=0, timeout=1):
 		ptz = self.ptz
